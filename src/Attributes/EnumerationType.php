@@ -3,14 +3,21 @@
 namespace Tnapf\JsonMapper\Attributes;
 
 use Attribute;
-use InvalidArgumentException;
 use ReflectionEnum;
-use ReflectionException;
+use Tnapf\JsonMapper\InvalidArgumentException;
+use Tnapf\JsonMapper\MapperException;
+use Tnapf\JsonMapper\MapperInterface;
 use UnitEnum;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class EnumerationType implements BaseType
 {
+    private ReflectionEnum $reflector;
+
+    /**
+     * @throws InvalidArgumentException
+     * @throws MapperException
+     */
     public function __construct(
         public readonly string $name,
         public readonly string $enum,
@@ -18,35 +25,33 @@ class EnumerationType implements BaseType
         public readonly bool $nullable = false
     ) {
         if (!enum_exists($this->enum)) {
-            throw new InvalidArgumentException('Enumeration does not exist or is invalid.');
+            throw InvalidArgumentException::createTypeDoesNotExist(sprintf('Enum %s', $this->enum));
+        }
+
+        $this->reflector = new ReflectionEnum($this->enum);
+        if (!$this->reflector->isBacked()) {
+            throw new MapperException('Non-backed enums cannot be mapped');
         }
     }
 
     /**
-     * @throws ReflectionException
+     * @throws InvalidArgumentException
+     * @throws MapperException
      */
-    public function isType(mixed $data): bool
+    public function cast(MapperInterface $mapper, mixed $data): UnitEnum
     {
-        $isScalar = is_int($data) || is_string($data);
-        $isEnumValue = $data instanceof UnitEnum;
-
-        if (!$isScalar && !$isEnumValue) {
-            return false;
+        if (!is_string($data) && !is_int($data)) {
+            throw InvalidArgumentException::createInvalidType('int or string', gettype($data));
         }
-
-        $reflector = new ReflectionEnum($this->enum);
 
         $comparator = $this->caseSensitive ? strcmp(...) : strcasecmp(...);
-        foreach ($reflector->getCases() as $case) {
-            if ($isEnumValue && $case->getValue() === $data) {
-                return true;
-            }
 
-            if ($isScalar && $reflector->isBacked() && $comparator($case->getBackingValue(), $data) === 0) {
-                return true;
+        foreach ($this->reflector->getCases() as $case) {
+            if ($comparator($case->getBackingValue(), $data) === 0) {
+                return $case->getValue();
             }
         }
 
-        return false;
+        throw new InvalidArgumentException(sprintf('%s is not an enum case.', $data));
     }
 }

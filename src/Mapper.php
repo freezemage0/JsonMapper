@@ -4,15 +4,14 @@ namespace Tnapf\JsonMapper;
 
 use ReflectionAttribute;
 use ReflectionClass;
+use ReflectionException;
 use Tnapf\JsonMapper\Attributes\AnyArray;
 use Tnapf\JsonMapper\Attributes\AnyType;
 use Tnapf\JsonMapper\Attributes\CaseConversionInterface;
 use Tnapf\JsonMapper\Attributes\BaseType;
 use Tnapf\JsonMapper\Attributes\BoolType;
-use Tnapf\JsonMapper\Attributes\EnumerationType;
 use Tnapf\JsonMapper\Attributes\FloatType;
 use Tnapf\JsonMapper\Attributes\IntType;
-use Tnapf\JsonMapper\Attributes\ObjectArrayType;
 use Tnapf\JsonMapper\Attributes\ObjectType;
 use Tnapf\JsonMapper\Attributes\StringType;
 
@@ -72,6 +71,11 @@ class Mapper implements MapperInterface
         return $this?->caseConversion?->convertFromCase($name) ?? $name;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws MapperException
+     */
     protected function doMapping(): object
     {
         $this->fillPropertyAttributes();
@@ -85,42 +89,11 @@ class Mapper implements MapperInterface
                     continue;
                 }
 
-                throw new MapperException("Property {$attribute->name} on {$this->reflection->name} not nullable");
+                throw new InvalidArgumentException("Property {$attribute->name} on {$this->reflection->name} not nullable");
             }
 
-            $validType = false;
-
-            foreach ($types as $type) {
-                if ($type instanceof ObjectType) {
-                    $data = $this->map($type->class, $data);
-                }
-
-                if ($type instanceof ObjectArrayType) {
-                    $data = array_map(
-                        fn ($item) => $this->map($type->class, $item),
-                        $data
-                    );
-                }
-
-                if ($type->isType($data)) {
-                    $validType = true;
-                    if ($type instanceof EnumerationType) {
-                        $data = $type->enum::tryFrom($data);
-                    }
-
-                    break;
-                }
-            }
-
-            if (!$validType) {
-                throw new MapperException(
-                    "Property {$attribute->name} is not of type ".
-                    implode(
-                        ', ',
-                        array_map(static fn ($type) => $type::class, $types)
-                    )
-                );
-            }
+            // With introduction of UnionType $types can be safely transformed into $type
+            $data = $types[0]->cast($this, $data);
 
             $camelCasePropertyName = $this->convertNameToCase($attribute->name);
             $property = $this->reflection->getProperty($camelCasePropertyName);
