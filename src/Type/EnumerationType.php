@@ -15,7 +15,7 @@ class EnumerationType implements ConvertableType
 {
     use BaseTypeConvertable;
 
-    private ReflectionEnum  $reflector;
+    private ReflectionEnum $reflector;
     private MapperInterface $mapper;
 
     /**

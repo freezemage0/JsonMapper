@@ -14,7 +14,7 @@ class UnionType implements ConvertableType, MapperAwareInterface
     use BaseTypeConvertable;
 
     /** @var array<array-key, BaseType> */
-    public readonly array   $types;
+    public readonly array $types;
 
     private MapperInterface $mapper;
 
@@ -45,11 +45,13 @@ class UnionType implements ConvertableType, MapperAwareInterface
             }
         }
 
-        throw new InvalidArgumentException(sprintf(
-            'Value %s is not of types %s',
-            $data,
-            implode(', ', $invalidTypes)
-        ));
+        throw new InvalidArgumentException(
+            sprintf(
+                'Value %s is not of types %s',
+                $data,
+                implode(', ', $invalidTypes)
+            )
+        );
     }
 
     public function setMapper(MapperInterface $mapper): void

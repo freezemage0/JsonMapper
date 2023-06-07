@@ -21,7 +21,7 @@ class StringType implements ConvertableType
     public function convert(mixed $data): string
     {
         if (is_object($data) && method_exists($data, '__toString') || $data instanceof Stringable) {
-            $data = (string) $data;
+            $data = (string)$data;
         }
 
         if (!is_string($data)) {

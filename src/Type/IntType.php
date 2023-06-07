@@ -23,6 +23,6 @@ class IntType implements ConvertableType
             throw InvalidArgumentException::createInvalidType('scalar', gettype($data));
         }
 
-        return (int) $data;
+        return (int)$data;
     }
 }

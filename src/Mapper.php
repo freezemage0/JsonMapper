@@ -21,19 +21,19 @@ use Tnapf\JsonMapper\Type\UnionType;
 
 class Mapper implements MapperInterface
 {
+    /**
+     * @var array<class-string, BaseType[]>
+     */
+    protected static array $attributesCache = [];
+
     protected CaseConverterInterface $caseConversion;
-    protected object          $instance;
+    protected object $instance;
     protected ReflectionClass $reflector;
 
     /**
      * @var array<array-key, BaseType>
      */
     protected array $types;
-
-    /**
-     * @var array<class-string, BaseType[]>
-     */
-    protected static array $attributesCache = [];
 
     protected array $data;
 
@@ -43,7 +43,10 @@ class Mapper implements MapperInterface
         $mapper->data = $data;
         $mapper->reflector = new ReflectionClass($class);
 
-        if ($attributes = $mapper->reflector->getAttributes(CaseConverterInterface::class, ReflectionAttribute::IS_INSTANCEOF)) {
+        if ($attributes = $mapper->reflector->getAttributes(
+            CaseConverterInterface::class,
+            ReflectionAttribute::IS_INSTANCEOF
+        )) {
             if (count($attributes) > 1) {
                 throw new MapperException("{$class} has more than one case conversion attribute");
             }
@@ -63,16 +66,6 @@ class Mapper implements MapperInterface
         }
 
         return $object;
-    }
-
-    protected function convertNameToCase(string $name): string
-    {
-        return $this?->caseConversion->convertToCase($name) ?? $name;
-    }
-
-    protected function convertNameFromCase(string $name): string
-    {
-        return $this?->caseConversion->convertFromCase($name) ?? $name;
     }
 
     /**
@@ -165,5 +158,15 @@ class Mapper implements MapperInterface
             'float' => new FloatType(name: $propertyName, nullable: $type->allowsNull()),
             default => new ObjectType(name: $propertyName, class: $type->getName(), nullable: $type->allowsNull()),
         };
+    }
+
+    protected function convertNameFromCase(string $name): string
+    {
+        return $this?->caseConversion->convertFromCase($name) ?? $name;
+    }
+
+    protected function convertNameToCase(string $name): string
+    {
+        return $this?->caseConversion->convertToCase($name) ?? $name;
     }
 }

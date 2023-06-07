@@ -8,20 +8,20 @@ use PHPUnit\Framework\TestCase;
 use stdClass;
 use Tnapf\JsonMapper\MapperException;
 use Tnapf\JsonMapper\MapperInterface;
-use Tnapf\JsonMapper\Type\AnyArray;
-use Tnapf\JsonMapper\Type\Any;
-use Tnapf\JsonMapper\Type\Boolean;
-use Tnapf\JsonMapper\Type\EnumerationType;
-use Tnapf\JsonMapper\Type\ObjectArray;
-use Tnapf\JsonMapper\Type\ObjectType;
-use Tnapf\JsonMapper\Type\FloatType;
-use Tnapf\JsonMapper\Type\PrimitiveType;
-use Tnapf\JsonMapper\Type\IntType;
-use Tnapf\JsonMapper\Type\ScalarArray;
-use Tnapf\JsonMapper\Type\StringType;
 use Tnapf\JsonMapper\Tests\Fakes\IssueCategory;
 use Tnapf\JsonMapper\Tests\Fakes\IssueState;
 use Tnapf\JsonMapper\Tests\Fakes\RolePermission;
+use Tnapf\JsonMapper\Type\Any;
+use Tnapf\JsonMapper\Type\AnyArray;
+use Tnapf\JsonMapper\Type\Boolean;
+use Tnapf\JsonMapper\Type\EnumerationType;
+use Tnapf\JsonMapper\Type\FloatType;
+use Tnapf\JsonMapper\Type\IntType;
+use Tnapf\JsonMapper\Type\ObjectArray;
+use Tnapf\JsonMapper\Type\ObjectType;
+use Tnapf\JsonMapper\Type\PrimitiveType;
+use Tnapf\JsonMapper\Type\ScalarArray;
+use Tnapf\JsonMapper\Type\StringType;
 
 class AttributeTest extends TestCase
 {
