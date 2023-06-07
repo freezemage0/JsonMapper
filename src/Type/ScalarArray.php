@@ -11,24 +11,14 @@ class ScalarArray implements ConvertableType
 {
     use BaseTypeConvertable;
 
+    private array $types;
+
     public function __construct(
         public readonly string $name,
-        public readonly PrimitiveType $type,
         public readonly bool $nullable = false,
+        PrimitiveType ...$types,
     ) {
-    }
-
-    public function isType(mixed $data): bool
-    {
-        $method = "is_{$this->type->value}";
-
-        foreach ($data as $value) {
-            if ($method($value) === false) {
-                return false;
-            }
-        }
-
-        return true;
+        $this->types = $types;
     }
 
     /**
@@ -42,11 +32,21 @@ class ScalarArray implements ConvertableType
 
         $result = [];
         foreach ($data as $item) {
-            if (!is_scalar($item)) {
-                throw InvalidArgumentException::createInvalidType('scalar', gettype($item));
+            $invalidTypes = [];
+            foreach ($this->types as $type) {
+                $validator = "is_{$type->value}";
+                if ($validator($item)) {
+                    continue 2;
+                }
+                $invalidTypes[] = $type->value;
+            }
+            if (!empty($invalidTypes)) {
+                throw InvalidArgumentException::createInvalidType(
+                        implode(' or ', $invalidTypes),
+                        gettype($item)
+                );
             }
 
-            settype($item, $this->type->value);
             $result[] = $item;
         }
 

@@ -16,11 +16,9 @@ class MapperTest extends TestCase
 {
     protected MapperInterface $mapper;
 
-    public function getMapper()
+    public function getMapper(): Mapper
     {
-        $this->mapper ??= new Mapper();
-
-        return $this->mapper;
+        return $this->mapper ??= new Mapper();
     }
 
     public function testMapping()

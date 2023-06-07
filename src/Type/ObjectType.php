@@ -38,11 +38,10 @@ class ObjectType implements ConvertableType, MapperAwareInterface
      */
     public function convert(mixed $data): object
     {
-        if (!is_object($data)) {
-            throw InvalidArgumentException::createInvalidType('object', gettype($data));
-        }
-
         try {
+            if (!is_array($data)) {
+                throw InvalidArgumentException::createInvalidType('array', gettype($data));
+            }
             return $this->mapper->map($this->class, $data);
         } catch (ReflectionException $e) {
             // Can't do anything about it or add more context. Rethrow into runtime.

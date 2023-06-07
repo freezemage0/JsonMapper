@@ -19,7 +19,7 @@ class IntType implements ConvertableType
 
     public function convert(mixed $data): int
     {
-        if (!is_scalar($data)) {
+        if (!is_int($data)) {
             throw InvalidArgumentException::createInvalidType('scalar', gettype($data));
         }
 

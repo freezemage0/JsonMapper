@@ -95,6 +95,10 @@ class Mapper implements MapperInterface
                 throw new InvalidArgumentException("Property {$type->name} on {$this->reflector->name} not nullable");
             }
 
+            if ($type instanceof MapperAwareInterface) {
+                $type->setMapper($this);
+            }
+
             $data = $type->convert($data);
 
             $camelCasePropertyName = $this->convertNameToCase($type->name);
@@ -124,7 +128,7 @@ class Mapper implements MapperInterface
 
             $this->types[$name] = [];
             if (!empty($attributes)) {
-                $this->types[$name] = [...$this->types[$name], ...$attributes];
+                $this->types[$name] = $attributes[0];
 
                 continue;
             }
@@ -137,7 +141,7 @@ class Mapper implements MapperInterface
 
             if ($type instanceof ReflectionUnionType) {
                 $subTypes = array_map(
-                    static fn (ReflectionNamedType $type): ConvertableType => $this->inferScalarType($name, $type),
+                    fn (ReflectionNamedType $type): ConvertableType => $this->inferScalarType($name, $type),
                     $type->getTypes()
                 );
                 $type = new UnionType($name, $type->allowsNull(), ...$subTypes);

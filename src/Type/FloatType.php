@@ -19,10 +19,10 @@ class FloatType implements ConvertableType
 
     public function convert(mixed $data): float
     {
-        if (!is_numeric($data)) {
+        if (!is_float($data)) {
             throw InvalidArgumentException::createInvalidType('int or float', gettype($data));
         }
 
-        return (float) $data;
+        return $data;
     }
 }

@@ -2,10 +2,15 @@
 
 namespace Tnapf\JsonMapper\Tests;
 
+use PHPUnit\Framework\Constraint\Callback;
+use PHPUnit\Framework\Constraint\IsEqual;
+use PHPUnit\Framework\Constraint\IsInstanceOf;
+use PHPUnit\Framework\Constraint\IsType;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use stdClass;
 use Tnapf\JsonMapper\MapperException;
+use Tnapf\JsonMapper\MapperInterface;
 use Tnapf\JsonMapper\Type\AnyArray;
 use Tnapf\JsonMapper\Type\Any;
 use Tnapf\JsonMapper\Type\Boolean;
@@ -67,18 +72,41 @@ class AttributeTest extends TestCase
 
     public function testObjectArray()
     {
-        $objectArray = new ObjectArray(name: 'objectArray', class: stdClass::class);
+        $mapperMock = $this->createMock(MapperInterface::class);
+        $mapperMock
+                ->expects($this->exactly(3))
+                ->method('map')
+                ->with(
+                        new IsEqual(stdClass::class),
+                        new IsType(IsType::TYPE_ARRAY)
+                )
+                ->willReturn(new stdClass());
 
-        $this->assertTrue($objectArray->isType([new stdClass(), new stdClass()]));
+        $objectArray = new ObjectArray(name: 'objectArray', class: stdClass::class);
+        $objectArray->setMapper($mapperMock);
+
+        $this->assertTrue($objectArray->isType([[], []]));
         $this->assertFalse($objectArray->isType(['test']));
         $this->assertFalse($objectArray->isType('test'));
+        $this->assertFalse($objectArray->isType([[], 'test']));
     }
 
     public function testObjectType()
     {
-        $objectType = new ObjectType(name: 'objectType', class: stdClass::class);
+        $mapperMock = $this->createMock(MapperInterface::class);
+        $mapperMock
+                ->expects($this->once())
+                ->method('map')
+                ->with(
+                        new IsEqual(stdClass::class),
+                        new IsType(IsType::TYPE_ARRAY)
+                )
+                ->willReturn(new stdClass());
 
-        $this->assertTrue($objectType->isType(new stdClass()));
+        $objectType = new ObjectType(name: 'objectType', class: stdClass::class);
+        $objectType->setMapper($mapperMock);
+
+        $this->assertTrue($objectType->isType([]));
         $this->assertFalse($objectType->isType('test'));
     }
 
@@ -155,22 +183,5 @@ class AttributeTest extends TestCase
         $type = new EnumerationType('permission', RolePermission::class);
 
         $this->assertFalse($type->isType(new stdClass()));
-    }
-
-    public function testAttributeRepetitionOnProperty()
-    {
-        $class = new ReflectionClass(AttributeDuplication::class);
-        $property = $class->getProperty('property');
-        $attributes = $property->getAttributes(ScalarArray::class);
-
-        $this->assertCount(2, $attributes);
-
-        $intAttribute = $attributes[0]->newInstance();
-        $this->assertEquals('property', $intAttribute->name);
-        $this->assertEquals(PrimitiveType::INT, $intAttribute->type);
-
-        $floatAttribute = $attributes[1]->newInstance();
-        $this->assertEquals('property', $floatAttribute->name);
-        $this->assertEquals(PrimitiveType::FLOAT, $floatAttribute->type);
     }
 }
