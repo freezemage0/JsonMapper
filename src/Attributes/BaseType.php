@@ -2,11 +2,7 @@
 
 namespace Tnapf\JsonMapper\Attributes;
 
-use Tnapf\JsonMapper\MapperInterface;
-
-interface BaseType
+interface BaseType extends ConvertableType
 {
-    public function cast(MapperInterface $mapper, mixed $data): mixed;
-
-    //public function isType(mixed $data): bool;
+    public function isType(mixed $data): bool;
 }

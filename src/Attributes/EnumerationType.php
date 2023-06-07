@@ -10,7 +10,7 @@ use Tnapf\JsonMapper\MapperInterface;
 use UnitEnum;
 
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class EnumerationType implements BaseType
+class EnumerationType implements ConvertableType
 {
     private ReflectionEnum $reflector;
 
@@ -53,5 +53,11 @@ class EnumerationType implements BaseType
         }
 
         throw new InvalidArgumentException(sprintf('%s is not an enum case.', $data));
+    }
+
+    public function isType(mixed $data): bool
+    {
+        // noop
+        return false;
     }
 }

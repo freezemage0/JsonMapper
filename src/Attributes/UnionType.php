@@ -2,10 +2,12 @@
 
 namespace Tnapf\JsonMapper\Attributes;
 
+use Attribute;
 use Tnapf\JsonMapper\InvalidArgumentException;
 use Tnapf\JsonMapper\MapperInterface;
 
-class UnionType implements BaseType
+#[Attribute(Attribute::TARGET_PROPERTY)]
+class UnionType implements BaseType, ConvertableType
 {
     /** @var array<array-key, BaseType> */
     public readonly array $types;
@@ -37,5 +39,11 @@ class UnionType implements BaseType
             $data,
             implode(', ', $invalidTypes)
         ));
+    }
+
+    public function isType(mixed $data): bool
+    {
+        // noop
+        return false;
     }
 }
