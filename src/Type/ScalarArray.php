@@ -42,8 +42,8 @@ class ScalarArray implements ConvertableType
             }
             if (!empty($invalidTypes)) {
                 throw InvalidArgumentException::createInvalidType(
-                        implode(' or ', $invalidTypes),
-                        gettype($item)
+                    implode(' or ', $invalidTypes),
+                    gettype($item)
                 );
             }
 

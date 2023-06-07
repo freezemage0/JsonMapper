@@ -42,6 +42,7 @@ class ObjectType implements ConvertableType, MapperAwareInterface
             if (!is_array($data)) {
                 throw InvalidArgumentException::createInvalidType('array', gettype($data));
             }
+
             return $this->mapper->map($this->class, $data);
         } catch (ReflectionException $e) {
             // Can't do anything about it or add more context. Rethrow into runtime.

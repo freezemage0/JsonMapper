@@ -2,12 +2,9 @@
 
 namespace Tnapf\JsonMapper\Tests;
 
-use PHPUnit\Framework\Constraint\Callback;
 use PHPUnit\Framework\Constraint\IsEqual;
-use PHPUnit\Framework\Constraint\IsInstanceOf;
 use PHPUnit\Framework\Constraint\IsType;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use stdClass;
 use Tnapf\JsonMapper\MapperException;
 use Tnapf\JsonMapper\MapperInterface;
@@ -25,7 +22,6 @@ use Tnapf\JsonMapper\Type\StringType;
 use Tnapf\JsonMapper\Tests\Fakes\IssueCategory;
 use Tnapf\JsonMapper\Tests\Fakes\IssueState;
 use Tnapf\JsonMapper\Tests\Fakes\RolePermission;
-use Tnapf\JsonMapper\Tests\Fakes\AttributeDuplication;
 
 class AttributeTest extends TestCase
 {
@@ -74,13 +70,13 @@ class AttributeTest extends TestCase
     {
         $mapperMock = $this->createMock(MapperInterface::class);
         $mapperMock
-                ->expects($this->exactly(3))
-                ->method('map')
-                ->with(
-                        new IsEqual(stdClass::class),
-                        new IsType(IsType::TYPE_ARRAY)
-                )
-                ->willReturn(new stdClass());
+            ->expects($this->exactly(3))
+            ->method('map')
+            ->with(
+                new IsEqual(stdClass::class),
+                new IsType(IsType::TYPE_ARRAY)
+            )
+            ->willReturn(new stdClass());
 
         $objectArray = new ObjectArray(name: 'objectArray', class: stdClass::class);
         $objectArray->setMapper($mapperMock);
@@ -95,13 +91,13 @@ class AttributeTest extends TestCase
     {
         $mapperMock = $this->createMock(MapperInterface::class);
         $mapperMock
-                ->expects($this->once())
-                ->method('map')
-                ->with(
-                        new IsEqual(stdClass::class),
-                        new IsType(IsType::TYPE_ARRAY)
-                )
-                ->willReturn(new stdClass());
+            ->expects($this->once())
+            ->method('map')
+            ->with(
+                new IsEqual(stdClass::class),
+                new IsType(IsType::TYPE_ARRAY)
+            )
+            ->willReturn(new stdClass());
 
         $objectType = new ObjectType(name: 'objectType', class: stdClass::class);
         $objectType->setMapper($mapperMock);
