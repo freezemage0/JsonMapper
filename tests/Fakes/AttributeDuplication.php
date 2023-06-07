@@ -2,14 +2,12 @@
 
 namespace Tnapf\JsonMapper\Tests\Fakes;
 
-use Tnapf\JsonMapper\Attributes\PrimitiveArrayType;
-use Tnapf\JsonMapper\Attributes\PrimitiveType;
+use Tnapf\JsonMapper\Type\ScalarArray;
+use Tnapf\JsonMapper\Type\PrimitiveType;
+use Tnapf\JsonMapper\Type\UnionType;
 
 class AttributeDuplication
 {
-    #[
-        PrimitiveArrayType(name: 'property', type: PrimitiveType::INT),
-        PrimitiveArrayType(name: 'property', type: PrimitiveType::FLOAT)
-    ]
+    #[UnionType('property', types: new ScalarArray('property', PrimitiveType::INT))]
     public array $property;
 }

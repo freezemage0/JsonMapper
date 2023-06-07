@@ -2,7 +2,7 @@
 
 namespace Tnapf\JsonMapper\Tests\Fakes;
 
-use Tnapf\JsonMapper\Attributes\EnumerationType;
+use Tnapf\JsonMapper\Type\EnumerationType;
 
 class Role
 {

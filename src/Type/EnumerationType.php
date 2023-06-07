@@ -1,9 +1,10 @@
 <?php
 
-namespace Tnapf\JsonMapper\Attributes;
+namespace Tnapf\JsonMapper\Type;
 
 use Attribute;
 use ReflectionEnum;
+use Tnapf\JsonMapper\Compatibility\BaseTypeConvertable;
 use Tnapf\JsonMapper\InvalidArgumentException;
 use Tnapf\JsonMapper\MapperException;
 use Tnapf\JsonMapper\MapperInterface;
@@ -12,7 +13,10 @@ use UnitEnum;
 #[Attribute(Attribute::TARGET_PROPERTY)]
 class EnumerationType implements ConvertableType
 {
-    private ReflectionEnum $reflector;
+    use BaseTypeConvertable;
+
+    private ReflectionEnum  $reflector;
+    private MapperInterface $mapper;
 
     /**
      * @throws InvalidArgumentException
@@ -38,7 +42,7 @@ class EnumerationType implements ConvertableType
      * @throws InvalidArgumentException
      * @throws MapperException
      */
-    public function cast(MapperInterface $mapper, mixed $data): UnitEnum
+    public function convert(mixed $data): UnitEnum
     {
         if (!is_string($data) && !is_int($data)) {
             throw InvalidArgumentException::createInvalidType('int or string', gettype($data));
@@ -55,9 +59,8 @@ class EnumerationType implements ConvertableType
         throw new InvalidArgumentException(sprintf('%s is not an enum case.', $data));
     }
 
-    public function isType(mixed $data): bool
+    public function setMapper(MapperInterface $mapper): void
     {
-        // noop
-        return false;
+        $this->mapper = $mapper;
     }
 }

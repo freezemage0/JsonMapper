@@ -1,11 +1,10 @@
 <?php
 
-namespace Tnapf\JsonMapper\Attributes;
+namespace Tnapf\JsonMapper\CaseConverter;
 
-use Attribute;
+use Tnapf\JsonMapper\CaseConverterInterface;
 
-#[Attribute(Attribute::TARGET_CLASS)]
-class SnakeToCamelCase implements CaseConversionInterface
+final class SnakeToCamelConverter implements CaseConverterInterface
 {
     public function convertToCase(string $string): string
     {
