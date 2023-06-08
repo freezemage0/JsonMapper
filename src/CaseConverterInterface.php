@@ -1,8 +1,8 @@
 <?php
 
-namespace Tnapf\JsonMapper\Attributes;
+namespace Tnapf\JsonMapper;
 
-interface CaseConversionInterface
+interface CaseConverterInterface
 {
     public function convertToCase(string $string): string;
 

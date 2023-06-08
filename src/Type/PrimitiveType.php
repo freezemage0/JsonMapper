@@ -1,6 +1,6 @@
 <?php
 
-namespace Tnapf\JsonMapper\Attributes;
+namespace Tnapf\JsonMapper\Type;
 
 enum PrimitiveType: string
 {

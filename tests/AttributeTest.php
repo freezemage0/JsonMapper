@@ -2,24 +2,26 @@
 
 namespace Tnapf\JsonMapper\Tests;
 
+use PHPUnit\Framework\Constraint\IsEqual;
+use PHPUnit\Framework\Constraint\IsType;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use stdClass;
-use Tnapf\JsonMapper\Attributes\AnyArray;
-use Tnapf\JsonMapper\Attributes\AnyType;
-use Tnapf\JsonMapper\Attributes\BoolType;
-use Tnapf\JsonMapper\Attributes\EnumerationType;
-use Tnapf\JsonMapper\Attributes\ObjectArrayType;
-use Tnapf\JsonMapper\Attributes\ObjectType;
-use Tnapf\JsonMapper\Attributes\FloatType;
-use Tnapf\JsonMapper\Attributes\PrimitiveType;
-use Tnapf\JsonMapper\Attributes\IntType;
-use Tnapf\JsonMapper\Attributes\PrimitiveArrayType;
-use Tnapf\JsonMapper\Attributes\StringType;
+use Tnapf\JsonMapper\MapperException;
+use Tnapf\JsonMapper\MapperInterface;
 use Tnapf\JsonMapper\Tests\Fakes\IssueCategory;
 use Tnapf\JsonMapper\Tests\Fakes\IssueState;
 use Tnapf\JsonMapper\Tests\Fakes\RolePermission;
-use Tnapf\JsonMapper\Tests\Fakes\AttributeDuplication;
+use Tnapf\JsonMapper\Type\Any;
+use Tnapf\JsonMapper\Type\AnyArray;
+use Tnapf\JsonMapper\Type\Boolean;
+use Tnapf\JsonMapper\Type\EnumerationType;
+use Tnapf\JsonMapper\Type\FloatType;
+use Tnapf\JsonMapper\Type\IntType;
+use Tnapf\JsonMapper\Type\ObjectArray;
+use Tnapf\JsonMapper\Type\ObjectType;
+use Tnapf\JsonMapper\Type\PrimitiveType;
+use Tnapf\JsonMapper\Type\ScalarArray;
+use Tnapf\JsonMapper\Type\StringType;
 
 class AttributeTest extends TestCase
 {
@@ -33,7 +35,7 @@ class AttributeTest extends TestCase
 
     public function testAnyType()
     {
-        $anyType = new AnyType(name: 'anyType');
+        $anyType = new Any(name: 'anyType');
 
         $this->assertTrue($anyType->isType('test'));
         $this->assertTrue($anyType->isType(1));
@@ -41,7 +43,7 @@ class AttributeTest extends TestCase
 
     public function testBoolType()
     {
-        $boolType = new BoolType(name: 'boolType');
+        $boolType = new Boolean(name: 'boolType');
 
         $this->assertTrue($boolType->isType(true));
         $this->assertTrue($boolType->isType(false));
@@ -66,18 +68,41 @@ class AttributeTest extends TestCase
 
     public function testObjectArray()
     {
-        $objectArray = new ObjectArrayType(name: 'objectArray', class: stdClass::class);
+        $mapperMock = $this->createMock(MapperInterface::class);
+        $mapperMock
+            ->expects($this->exactly(3))
+            ->method('map')
+            ->with(
+                new IsEqual(stdClass::class),
+                new IsType(IsType::TYPE_ARRAY)
+            )
+            ->willReturn(new stdClass());
 
-        $this->assertTrue($objectArray->isType([new stdClass(), new stdClass()]));
+        $objectArray = new ObjectArray(name: 'objectArray', class: stdClass::class);
+        $objectArray->setMapper($mapperMock);
+
+        $this->assertTrue($objectArray->isType([[], []]));
         $this->assertFalse($objectArray->isType(['test']));
         $this->assertFalse($objectArray->isType('test'));
+        $this->assertFalse($objectArray->isType([[], 'test']));
     }
 
     public function testObjectType()
     {
-        $objectType = new ObjectType(name: 'objectType', class: stdClass::class);
+        $mapperMock = $this->createMock(MapperInterface::class);
+        $mapperMock
+            ->expects($this->once())
+            ->method('map')
+            ->with(
+                new IsEqual(stdClass::class),
+                new IsType(IsType::TYPE_ARRAY)
+            )
+            ->willReturn(new stdClass());
 
-        $this->assertTrue($objectType->isType(new stdClass()));
+        $objectType = new ObjectType(name: 'objectType', class: stdClass::class);
+        $objectType->setMapper($mapperMock);
+
+        $this->assertTrue($objectType->isType([]));
         $this->assertFalse($objectType->isType('test'));
     }
 
@@ -92,7 +117,7 @@ class AttributeTest extends TestCase
     public function testPrimitiveArray()
     {
         foreach (PrimitiveType::cases() as $primitive) {
-            $primitiveType = new PrimitiveArrayType(name: 'primitiveType', type: $primitive);
+            $primitiveType = new ScalarArray(name: 'primitiveType', type: $primitive);
 
             $trueType = match ($primitive) {
                 PrimitiveType::STRING => ['test', 'test2'],
@@ -115,12 +140,12 @@ class AttributeTest extends TestCase
         }
     }
 
-    public function testPureEnumerationType(): void
+    public function testPureEnumerationTypeCannotBeMapped(): void
     {
-        $type = new EnumerationType('issueState', IssueState::class);
+        $this->expectException(MapperException::class);
+        $this->expectExceptionMessage('Non-backed enums cannot be mapped');
 
-        $this->assertTrue($type->isType(IssueState::NEW));
-        $this->assertFalse($type->isType('IN_PROGRESS'));
+        new EnumerationType('issueState', IssueState::class);
     }
 
     public function testIntBackedEnumerationType(): void
@@ -154,22 +179,5 @@ class AttributeTest extends TestCase
         $type = new EnumerationType('permission', RolePermission::class);
 
         $this->assertFalse($type->isType(new stdClass()));
-    }
-
-    public function testAttributeRepetitionOnProperty()
-    {
-        $class = new ReflectionClass(AttributeDuplication::class);
-        $property = $class->getProperty('property');
-        $attributes = $property->getAttributes(PrimitiveArrayType::class);
-
-        $this->assertCount(2, $attributes);
-
-        $intAttribute = $attributes[0]->newInstance();
-        $this->assertEquals('property', $intAttribute->name);
-        $this->assertEquals(PrimitiveType::INT, $intAttribute->type);
-
-        $floatAttribute = $attributes[1]->newInstance();
-        $this->assertEquals('property', $floatAttribute->name);
-        $this->assertEquals(PrimitiveType::FLOAT, $floatAttribute->type);
     }
 }

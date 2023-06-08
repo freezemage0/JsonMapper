@@ -16,13 +16,6 @@ class MapperTest extends TestCase
 {
     protected MapperInterface $mapper;
 
-    public function getMapper()
-    {
-        $this->mapper ??= new Mapper();
-
-        return $this->mapper;
-    }
-
     public function testMapping()
     {
         $user = [
@@ -73,6 +66,11 @@ class MapperTest extends TestCase
         $this->assertSame($user['address']['zip'], $mappedUser->address->zip);
         $this->assertSame($user['address']['latitude_degrees'], $mappedUser->address->latitudeDegrees);
         $this->assertSame($user['address']['longitude_degrees'], $mappedUser->address->longitudeDegrees);
+    }
+
+    public function getMapper(): Mapper
+    {
+        return $this->mapper ??= new Mapper();
     }
 
     public function testMultipleTypeMapping()

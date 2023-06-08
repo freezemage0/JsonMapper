@@ -11,8 +11,8 @@ interface MapperInterface
      *
      * @param class-string<T> $class
      *
-     * @throws ReflectionException
      * @throws MapperException
+     * @throws ReflectionException
      *
      * @return T
      */

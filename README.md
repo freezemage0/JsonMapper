@@ -47,8 +47,8 @@ $mappedUser = $mapper->map($user, User::class);
 For primitive types you can use the `PrimitiveArray` attribute on the property
 
 ```php
-use Tnapf\JsonMapper\Attributes\PrimitiveType;
-use Tnapf\JsonMapper\Attributes\PrimitiveArrayType;
+use Tnapf\JsonMapper\Type\PrimitiveType;
+use Tnapf\JsonMapper\Type\ScalarArray;
 
 class User
 {
@@ -56,7 +56,7 @@ class User
     public string $username;
     public string $password;
     
-    #[PrimitiveArrayType(name: 'roles', type: PrimitiveType::STRING)]
+    #[ScalarArray(name: 'roles', type: PrimitiveType::STRING)]
     public array $colors;
 }
 ```
@@ -66,7 +66,7 @@ class User
 If you want the array to have a class, you can use the ObjectArrayType attribute
 
 ```php
-use Tnapf\JsonMapper\Attributes\ObjectArrayType;
+use Tnapf\JsonMapper\Type\ObjectArray;
 
 class User
 {
@@ -74,7 +74,7 @@ class User
     public string $username;
     public string $password;
     
-    #[ObjectArrayType(name: 'roles', type: Role::class)]
+    #[ObjectArray(name: 'roles', type: Role::class)]
     public array $roles;
 }
 ```
@@ -84,9 +84,9 @@ class User
 Since the common json naming convention is `snake_case` and PHP's is `camelCase` you can use apply an attribute to the class to have the `snake_case` json properties routed to your `camelCase` properties.
 
 ```php
-use Tnapf\JsonMapper\Attributes\SnakeToCamelCase;
-use Tnapf\JsonMapper\Attributes\PrimitiveType;
-use Tnapf\JsonMapper\Attributes\PrimitiveArrayType;
+use Tnapf\JsonMapper\Type\SnakeToCamelCase;
+use Tnapf\JsonMapper\Type\PrimitiveType;
+use Tnapf\JsonMapper\Type\ScalarArray;
 
 #[SnakeToCamelCase]
 class User
@@ -95,7 +95,7 @@ class User
     public string $username;
     public string $password;
     
-    #[PrimitiveArrayType(name: 'all_roles', type: PrimitiveType::STRING)]
+    #[ScalarArray(name: 'all_roles', type: PrimitiveType::STRING)]
     public array $allRoles;
 }
 ```

@@ -2,8 +2,8 @@
 
 namespace Tnapf\JsonMapper\Tests\Fakes;
 
-use Tnapf\JsonMapper\Attributes\FloatType;
-use Tnapf\JsonMapper\Attributes\SnakeToCamelCase;
+use Tnapf\JsonMapper\Type\FloatType;
+use Tnapf\JsonMapper\Type\SnakeToCamelCase;
 
 #[SnakeToCamelCase]
 class Address

@@ -2,7 +2,7 @@
 
 namespace Tnapf\JsonMapper\Tests\Fakes;
 
-use Tnapf\JsonMapper\Attributes\ObjectArrayType;
+use Tnapf\JsonMapper\Type\ObjectArray;
 
 class User
 {
@@ -10,7 +10,7 @@ class User
     public string $username;
     public string $password;
 
-    #[ObjectArrayType(name: 'roles', class: Role::class)]
+    #[ObjectArray(name: 'roles', class: Role::class)]
     public array $roles;
 
     public Address $address;

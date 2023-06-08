@@ -4,139 +4,111 @@ namespace Tnapf\JsonMapper;
 
 use ReflectionAttribute;
 use ReflectionClass;
-use Tnapf\JsonMapper\Attributes\AnyArray;
-use Tnapf\JsonMapper\Attributes\AnyType;
-use Tnapf\JsonMapper\Attributes\CaseConversionInterface;
-use Tnapf\JsonMapper\Attributes\BaseType;
-use Tnapf\JsonMapper\Attributes\BoolType;
-use Tnapf\JsonMapper\Attributes\EnumerationType;
-use Tnapf\JsonMapper\Attributes\FloatType;
-use Tnapf\JsonMapper\Attributes\IntType;
-use Tnapf\JsonMapper\Attributes\ObjectArrayType;
-use Tnapf\JsonMapper\Attributes\ObjectType;
-use Tnapf\JsonMapper\Attributes\StringType;
+use ReflectionException;
+use ReflectionNamedType;
+use ReflectionUnionType;
+use Tnapf\JsonMapper\CaseConverter\NullConverter;
+use Tnapf\JsonMapper\Type\Any;
+use Tnapf\JsonMapper\Type\AnyArray;
+use Tnapf\JsonMapper\Type\BaseType;
+use Tnapf\JsonMapper\Type\Boolean;
+use Tnapf\JsonMapper\Type\ConvertableType;
+use Tnapf\JsonMapper\Type\FloatType;
+use Tnapf\JsonMapper\Type\IntType;
+use Tnapf\JsonMapper\Type\ObjectType;
+use Tnapf\JsonMapper\Type\StringType;
+use Tnapf\JsonMapper\Type\UnionType;
 
 class Mapper implements MapperInterface
 {
-    protected ?CaseConversionInterface $caseConversion = null;
-    protected object $instance;
-    protected ReflectionClass $reflection;
-
     /**
-     * @var array<string, array<array-key, BaseType>>
-     */
-    protected array $attributes;
-
-    /**
-     * @var array <class-string, BaseType[]>
+     * @var array<class-string, BaseType[]>
      */
     protected static array $attributesCache = [];
 
-    protected string $class;
+    protected CaseConverterInterface $caseConversion;
+    protected object $instance;
+    protected ReflectionClass $reflector;
+
+    /**
+     * @var array<array-key, BaseType>
+     */
+    protected array $types;
+
     protected array $data;
 
     public function map(string $class, array $data): object
     {
-        $instance = new self();
-        $instance->class = $class;
-        $instance->data = $data;
-        $instance->reflection = new ReflectionClass($class);
+        $mapper = new self();
+        $mapper->data = $data;
+        $mapper->reflector = new ReflectionClass($class);
 
-        if ($attributes = $instance->reflection->getAttributes(CaseConversionInterface::class, ReflectionAttribute::IS_INSTANCEOF)) {
+        if ($attributes = $mapper->reflector->getAttributes(
+            CaseConverterInterface::class,
+            ReflectionAttribute::IS_INSTANCEOF
+        )) {
             if (count($attributes) > 1) {
                 throw new MapperException("{$class} has more than one case conversion attribute");
             }
 
-            $instance->caseConversion = $attributes[0]->newInstance();
+            $mapper->caseConversion = $attributes[0]->newInstance();
+        } else {
+            $mapper->caseConversion = new NullConverter();
         }
 
-        $instance->attributes = self::$attributesCache[$class] ?? [];
-        $instance->instance = $instance->reflection->newInstanceWithoutConstructor();
+        $mapper->types = self::$attributesCache[$class] ?? [];
+        $mapper->instance = $mapper->reflector->newInstanceWithoutConstructor();
 
-        $object = $instance->doMapping();
+        $object = $mapper->doMapping();
 
         if (!isset(self::$attributesCache[$class])) {
-            self::$attributesCache[$class] = $instance->attributes;
+            self::$attributesCache[$class] = $mapper->types;
         }
 
         return $object;
     }
 
-    protected function convertNameToCase(string $name): string
-    {
-        return $this?->caseConversion?->convertToCase($name) ?? $name;
-    }
-
-    protected function convertNameFromCase(string $name): string
-    {
-        return $this?->caseConversion?->convertFromCase($name) ?? $name;
-    }
-
+    /**
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     * @throws MapperException
+     */
     protected function doMapping(): object
     {
-        $this->fillPropertyAttributes();
+        $types = $this->getTypes();
 
-        foreach ($this->attributes as $types) {
-            $attribute = $types[0];
-            $data = $this->data[$this->convertNameFromCase($attribute->name)] ?? null;
+        foreach ($types as $type) {
+            $data = $this->data[$this->convertNameFromCase($type->name)] ?? null;
 
             if ($data === null) {
-                if ($attribute->nullable) {
+                if ($type->nullable) {
                     continue;
                 }
 
-                throw new MapperException("Property {$attribute->name} on {$this->reflection->name} not nullable");
+                throw new InvalidArgumentException("Property {$type->name} on {$this->reflector->name} not nullable");
             }
 
-            $validType = false;
-
-            foreach ($types as $type) {
-                if ($type instanceof ObjectType) {
-                    $data = $this->map($type->class, $data);
-                }
-
-                if ($type instanceof ObjectArrayType) {
-                    $data = array_map(
-                        fn ($item) => $this->map($type->class, $item),
-                        $data
-                    );
-                }
-
-                if ($type->isType($data)) {
-                    $validType = true;
-                    if ($type instanceof EnumerationType) {
-                        $data = $type->enum::tryFrom($data);
-                    }
-
-                    break;
-                }
+            if ($type instanceof MapperAwareInterface) {
+                $type->setMapper($this);
             }
 
-            if (!$validType) {
-                throw new MapperException(
-                    "Property {$attribute->name} is not of type ".
-                    implode(
-                        ', ',
-                        array_map(static fn ($type) => $type::class, $types)
-                    )
-                );
-            }
+            $data = $type->convert($data);
 
-            $camelCasePropertyName = $this->convertNameToCase($attribute->name);
-            $property = $this->reflection->getProperty($camelCasePropertyName);
+            $camelCasePropertyName = $this->convertNameToCase($type->name);
+            $property = $this->reflector->getProperty($camelCasePropertyName);
             $property->setValue($this->instance, $data);
         }
 
         return $this->instance;
     }
 
-    protected function fillPropertyAttributes(): void
+    protected function getTypes(): array
     {
-        if ($this->attributes !== []) {
-            return;
+        if (!empty($this->types)) {
+            return $this->types;
         }
 
-        $properties = $this->reflection->getProperties();
+        $properties = $this->reflector->getProperties();
 
         foreach ($properties as $property) {
             $attributes = array_map(
@@ -147,33 +119,54 @@ class Mapper implements MapperInterface
             $name = $property->getName();
             $type = $property->getType();
 
-            $this->attributes[$name] = [];
+            $this->types[$name] = [];
             if (!empty($attributes)) {
-                $this->attributes[$name] = [...$this->attributes[$name], ...$attributes];
+                $this->types[$name] = $attributes[0];
 
                 continue;
             }
 
             if ($type === null) {
-                $this->attributes[$name][] = new AnyType($name);
+                $this->types[$name] = new Any($name);
 
                 continue;
             }
 
-            $types = method_exists($type, 'getTypes') ?
-                $type->getTypes() :
-                [$type];
-
-            foreach ($types as $type) {
-                $this->attributes[$name][] = match ($type->getName()) {
-                    'int' => new IntType(name: $name, nullable: $type->allowsNull()),
-                    'bool' => new BoolType(name: $name, nullable: $type->allowsNull()),
-                    'string' => new StringType(name: $name, nullable: $type->allowsNull()),
-                    'array' => new AnyArray(name: $name, nullable: $type->allowsNull()),
-                    'float' => new FloatType(name: $name, nullable: $type->allowsNull()),
-                    default => new ObjectType(name: $name, class: $type->getName(), nullable: $type->allowsNull()),
-                };
+            if ($type instanceof ReflectionUnionType) {
+                $subTypes = array_map(
+                    fn (ReflectionNamedType $type): ConvertableType => $this->inferScalarType($name, $type),
+                    $type->getTypes()
+                );
+                $type = new UnionType($name, $type->allowsNull(), ...$subTypes);
+            } else {
+                $type = $this->inferScalarType($name, $type);
             }
+
+            $this->types[$name] = $type;
         }
+
+        return $this->types;
+    }
+
+    private function inferScalarType(string $propertyName, ReflectionNamedType $type): ConvertableType
+    {
+        return match ($type->getName()) {
+            'int' => new IntType(name: $propertyName, nullable: $type->allowsNull()),
+            'bool' => new Boolean(name: $propertyName, nullable: $type->allowsNull()),
+            'string' => new StringType(name: $propertyName, nullable: $type->allowsNull()),
+            'array' => new AnyArray(name: $propertyName, nullable: $type->allowsNull()),
+            'float' => new FloatType(name: $propertyName, nullable: $type->allowsNull()),
+            default => new ObjectType(name: $propertyName, class: $type->getName(), nullable: $type->allowsNull()),
+        };
+    }
+
+    protected function convertNameFromCase(string $name): string
+    {
+        return $this?->caseConversion->convertFromCase($name) ?? $name;
+    }
+
+    protected function convertNameToCase(string $name): string
+    {
+        return $this?->caseConversion->convertToCase($name) ?? $name;
     }
 }

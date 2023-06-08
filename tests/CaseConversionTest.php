@@ -3,13 +3,13 @@
 namespace Tnapf\JsonMapper\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Tnapf\JsonMapper\Attributes\SnakeToCamelCase;
+use Tnapf\JsonMapper\CaseConverter\SnakeToCamelConverter;
 
 class CaseConversionTest extends TestCase
 {
     public function testSnakeToCamelCase()
     {
-        $converter = new SnakeToCamelCase();
+        $converter = new SnakeToCamelConverter();
         $snakeCase = 'snake_case';
         $camelCase = 'snakeCase';
 
